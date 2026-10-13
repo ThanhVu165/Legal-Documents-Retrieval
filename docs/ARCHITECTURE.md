@@ -5,6 +5,9 @@ Các module retrieval/preprocessing dưới đây **Not implemented**.
 W01 đã triển khai data/schema.py (config và ID), data/inspection.py (nguồn và footer),
 data/audit.py (diagnostics offline và SQLite tạm), cùng hai CLI inspection/audit.
 Không tạo processed text; diagnostics text chỉ tồn tại trong bộ nhớ từng record.
+Phạm vi audit chỉ gồm metadata, content và relationships; mặc định full.
+Legacy bị lọc trước khi đọc footer/file. Số dòng đã đọc phải khớp footer của từng
+bảng để thống kê và join được ghi nhận là đầy đủ, không suy ra từ sample.
 
 | Vị trí | Trách nhiệm dự kiến |
 | --- | --- |

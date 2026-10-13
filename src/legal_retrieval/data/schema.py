@@ -1,4 +1,4 @@
-"""Configuration and lossless source-ID validation for W01."""
+"""Đọc cấu hình và kiểm tra ID nguồn không mất thông tin cho W01."""
 
 import re
 import unicodedata
@@ -9,7 +9,7 @@ import yaml
 
 
 def normalize_id(value: Any) -> str | None:
-    """Preserve strings verbatim; allow integers, never floats/bools or trimming."""
+    """Giữ nguyên chuỗi; chấp nhận số nguyên, không ép số thực/bool hay cắt khoảng trắng."""
     if type(value) is int:
         return str(value)
     if isinstance(value, str) and value and value.strip() == value:
@@ -20,7 +20,7 @@ def normalize_id(value: Any) -> str | None:
 
 
 def load_config(path: str | Path) -> dict[str, Any]:
-    """Read YAML and reject malformed dataset identifiers or unpinned revisions."""
+    """Đọc YAML, từ chối dataset ID sai định dạng hoặc revision không phải SHA đầy đủ."""
     config = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
     if not isinstance(config, dict) or not isinstance(config.get("dataset"), dict):
         raise ValueError("Expected dataset mapping in config")

@@ -1,4 +1,4 @@
-"""Small synthetic rows test the audit without Internet or source data."""
+"""Dữ liệu giả nhỏ kiểm thử audit, không cần Internet hay dữ liệu nguồn."""
 
 import copy
 import json

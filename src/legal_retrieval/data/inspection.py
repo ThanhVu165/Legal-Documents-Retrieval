@@ -1,4 +1,4 @@
-"""Pinned Hugging Face discovery and bounded Parquet reads, without Hub tokens."""
+"""Khảo sát Hugging Face tại SHA khóa và đọc Parquet có giới hạn, không dùng token."""
 
 import hashlib
 import io
@@ -21,13 +21,13 @@ MAX_GROUP_BYTES = 256 * 1024**2
 
 
 def fetch_json(url: str) -> Any:
-    """Fetch public API JSON with a timeout; no implicit credentials."""
+    """Đọc JSON từ API công khai có timeout; không tự sử dụng thông tin xác thực."""
     with urllib.request.urlopen(url, timeout=60) as response:
         return json.load(response)
 
 
 class RangeFile(io.RawIOBase):
-    """Seekable read-only HTTP file; reject ignored/mismatched ranges before reading."""
+    """File HTTP chỉ đọc và seek được; từ chối Range sai trước khi tải nội dung."""
 
     def __init__(self, url: str, size: int, budget: int | None = None) -> None:
         super().__init__()
@@ -84,7 +84,7 @@ class RangeFile(io.RawIOBase):
 
 
 def describe_parquet(source: Any) -> dict[str, Any]:
-    """Read actual footer schema and declared row counts, not dataset-card totals."""
+    """Đọc schema và số dòng trong footer Parquet thật, không lấy tổng từ dataset card."""
     parquet = pq.ParquetFile(source)
     return {"schema": {f.name: str(f.type) for f in parquet.schema_arrow},
             "total_records_if_verified": parquet.metadata.num_rows,
@@ -102,7 +102,7 @@ def describe_parquet(source: Any) -> dict[str, Any]:
 
 
 def sample_plan(group_rows: list[int], limit: int, seed: int) -> tuple[int | None, list[int]]:
-    """Uniformly choose one nonempty group, then row positions within that cluster."""
+    """Chọn đều một row group có dữ liệu rồi chọn đều vị trí dòng trong group đó."""
     if limit <= 0:
         raise ValueError("max-records must be positive")
     groups = [i for i, n in enumerate(group_rows) if n]
@@ -115,7 +115,7 @@ def sample_plan(group_rows: list[int], limit: int, seed: int) -> tuple[int | Non
 
 def iter_records(table: dict[str, Any], mode: str, limit: int | None, seed: int,
                  start_group: int = 0) -> Iterator[dict[str, Any]]:
-    """Read batches of 64 rows; sample at most limit rows, full restarts at a row group."""
+    """Đọc batch 64 dòng; mẫu có giới hạn, chế độ full có thể bắt đầu từ row group chỉ định."""
     if mode not in {"sample", "full"} or (limit is not None and limit <= 0):
         raise ValueError("Invalid audit mode or max-records")
     if start_group < 0 or start_group > len(table["row_group_rows"]):
@@ -174,8 +174,9 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def inspect_dataset(dataset_id: str, revision: str | None = None) -> dict[str, Any]:
-    """Discover pinned config/split/file mappings and independently inspect each footer."""
+def inspect_dataset(dataset_id: str, revision: str | None = None,
+                    configs: list[str] | None = None) -> dict[str, Any]:
+    """Phát hiện config/split/file tại SHA khóa rồi kiểm tra footer từng file được chọn."""
     suffix = f"/revision/{revision}" if revision else ""
     info = fetch_json(f"{HUB}/api/datasets/{dataset_id}{suffix}")
     revision = info["sha"]
@@ -217,10 +218,15 @@ def inspect_dataset(dataset_id: str, revision: str | None = None) -> dict[str, A
         "card_claimed_statistics": card_data.get("dataset_info"),
         "tables": [], "warnings": ["License is a publisher claim; source rights remain unresolved."],
     }
-    configs = card_data.get("configs")
-    if not configs:
+    discovered_configs = card_data.get("configs")
+    if not discovered_configs:
         raise ValueError("No config/file mappings discovered; refusing guessed config names")
-    for config in configs:
+    if configs and set(configs) - {c["config_name"] for c in discovered_configs}:
+        raise ValueError("Requested config was not discovered")
+    report["selected_configs"] = configs
+    for config in discovered_configs:
+        if configs and config["config_name"] not in configs:
+            continue
         for data in config["data_files"]:
             paths = data["path"] if isinstance(data["path"], list) else [data["path"]]
             for filename in paths:

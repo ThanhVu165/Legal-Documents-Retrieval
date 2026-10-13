@@ -1,9 +1,10 @@
 dataset:
   id: th1nhng0/vietnamese-legal-documents
-  revision: 8977887f17be2defae4c5171d55562e1cde7d695 # Verified via pinned Hub API.
+  revision: 8977887f17be2defae4c5171d55562e1cde7d695 # Đã xác minh qua API Hub tại SHA này.
+  configs: [metadata, content, relationships] # Chỉ audit ba bảng hiện hành, không lấy legacy.
   license_status: claimed_source_rights_unresolved
   claimed_license: cc-by-4.0
-  source_rights: unverified # Card provenance is not legal clearance of source material.
+  source_rights: unverified # Nguồn ghi trong card chưa chứng minh quyền sử dụng dữ liệu gốc.
 paths:
   raw: data/raw
   interim: data/interim
@@ -11,8 +12,8 @@ paths:
   annotations: data/annotations
   manifests: data/manifests
 schema:
-  id_field: id # Current metadata/content: string; legacy: int64.
-  text_field: content_html # Current content; legacy content is plain text.
+  id_field: id # ID của metadata và content hiện hành là chuỗi.
+  text_field: content_html # Giữ nguyên HTML gốc, chỉ đọc để kiểm định.
   metadata_fields:
     - title
     - so_ky_hieu
@@ -34,16 +35,14 @@ schema:
     metadata: {split: data, id_field: id, text_field: null}
     content: {split: data, id_field: id, text_field: content_html}
     relationships: {split: data, id_field: doc_id, target_field: other_doc_id}
-    legacy_metadata: {split: metadata, id_field: id, text_field: null}
-    legacy_content: {split: content, id_field: id, text_field: content}
 cleaning:
   status: proposed_not_implemented
   unicode_normalization: NFC
   preserve_raw: true
 chunking:
   status: proposed_not_implemented
-  strategy: null # Choose after structure and model token-limit audit.
+  strategy: null # Chỉ chốt sau khi kiểm tra cấu trúc và giới hạn tokenizer thật.
   max_tokens: null
   overlap_tokens: null
 seed: 42
-output_format: jsonl # Proposed; no data generated.
+output_format: jsonl # Định dạng dự kiến; chưa tạo dữ liệu processed.

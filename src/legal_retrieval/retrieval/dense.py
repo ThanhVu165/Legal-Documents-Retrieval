@@ -1,1 +1,1 @@
-"""Not implemented. TODO: implement retrieval/dense in its corresponding roadmap task."""
+"""Chưa triển khai. Thực hiện module retrieval/dense ở bước tương ứng của lộ trình."""

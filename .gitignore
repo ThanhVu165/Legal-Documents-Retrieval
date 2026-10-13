@@ -49,4 +49,4 @@ artifacts/**/*
 results/**/*
 !results/**/
 !**/.gitkeep
-# Manifests and reports may be tracked after human review.
+# Chỉ theo dõi manifest và báo cáo sau khi kiểm tra nội dung.

@@ -1,4 +1,4 @@
-"""Synthetic unit fixtures; never used as measured corpus evidence."""
+"""Dữ liệu giả dùng cho unit test; không dùng làm bằng chứng đo corpus thật."""
 
 import json
 

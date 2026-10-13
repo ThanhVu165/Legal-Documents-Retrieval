@@ -1,4 +1,4 @@
-"""Report Python and NVIDIA visibility without installing ML dependencies."""
+"""Báo phiên bản Python và khả năng thấy NVIDIA, không cài dependency học máy."""
 
 import platform
 import shutil

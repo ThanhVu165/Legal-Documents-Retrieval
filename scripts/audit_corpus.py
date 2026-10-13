@@ -1,4 +1,4 @@
-"""Read-only W01 sample/full audit. Full mode is explicit and never part of CI."""
+"""Audit W01 chỉ đọc; mặc định quét toàn bộ ba bảng hiện hành, không chạy full trong CI."""
 
 import argparse
 import hashlib
@@ -20,28 +20,32 @@ from legal_retrieval.data.schema import load_config, normalize_id  # noqa: E402
 
 
 def render_markdown(report: dict[str, Any]) -> str:
-    """Generate all numeric tables directly from the actual machine-readable report."""
-    lines = ["# W01 — Corpus Audit", "", "## 1. Dataset Overview", "",
+    """Sinh mọi bảng số liệu trực tiếp từ báo cáo JSON của lần chạy thực tế."""
+    complete = report.get("audit_completed", False)
+    lines = ["# W01 — Kiểm định corpus pháp luật tiếng Việt", "", "## 1. Tổng quan dataset", "",
              f"Dataset: `{report['dataset_id']}`; revision: `{report['revision']}`.",
              f"Audit UTC: {report['audit_timestamp']}; mode: **{report['mode']}**.", "",
-             "## 2. Data Source and Licensing", "",
-             json.dumps(report["license_and_provenance"], ensure_ascii=False, indent=2), "",
+             "Phạm vi: metadata, content và relationships hiện hành; không lấy legacy.",
+             "Đã quét đầy đủ các bảng được chọn." if complete else "Lần chạy này chưa quét đầy đủ các bảng được chọn.", "",
+             "## 2. Nguồn dữ liệu và giấy phép", "", "```json",
+             json.dumps(report["license_and_provenance"], ensure_ascii=False, indent=2), "```", "",
              "License công bố chưa chứng minh quyền với mọi tài liệu nguồn. Không có raw dump trong báo cáo.",
-             "", "## 3. Schema Inspection", ""]
+             "", "## 3. Kiểm tra schema", ""]
     for table in report["tables"]:
         lines += [f"- `{table['config']}/{table['split']}` ({table['record_level']}): "
                   + ", ".join(f"`{k}: {v}`" for k, v in table["schema"].items())]
-    lines += ["", "## 4. Data Volume", "",
-              "Footer Parquet là thống kê file, chưa phải full scan nội dung. Số đo chất lượng chỉ thuộc các record đã audit.",
+    lines += ["", "## 4. Số lượng dữ liệu", "",
+              "Số dòng đã audit được đếm trong lúc đọc và đối chiếu riêng với footer Parquet; không lấy số từ dataset card.",
               "", "| Config/split | Footer rows | Audited rows | Coverage | Row group |",
               "| --- | ---: | ---: | --- | ---: |"]
     for t in report["tables"]:
         lines += [f"| {t['config']}/{t['split']} | {t['total_records_if_verified']} | "
                   f"{t['scanned_records']} | {t['coverage']} | {t.get('selected_row_group')} |"]
-    lines += ["", "## 5. Metadata/Content Relationships", "",
-              "Join chỉ trên ID quan sát được; phía không có trong mẫu khác không phải orphan toàn corpus.",
+    lines += ["", "## 5. Quan hệ giữa metadata, content và relationships", "",
+              "Join trên toàn bộ ID an toàn của các bảng đã quét đầy đủ; mismatch là số đo chính xác của snapshot này."
+              if complete else "Join chỉ trên ID đã đọc; một phần quét không chứng minh orphan toàn corpus.",
               "", "```json", json.dumps(report["join_integrity"], ensure_ascii=False, indent=2), "```",
-              "", "## 6. Missing and Duplicate Analysis", "",
+              "", "## 6. Phân tích trường thiếu và trùng lặp", "",
               "| Config | ID null/blank | Unsafe ID | Duplicate key extra rows | Missing fields (count / audited) |",
               "| --- | ---: | ---: | ---: | --- |"]
     for t in report["tables"]:
@@ -53,7 +57,7 @@ def render_markdown(report: dict[str, Any]) -> str:
         lines += [f"| {t['config']} | {t['id_integrity']['null_or_blank']} | "
                   f"{t['id_integrity']['unsafe']} | {t['duplicate_ids']['extra_rows']} | {missing or '0 observed'} |"]
     lines += ["", "Relationships ở cấp edge: lặp doc_id là degree, không phải duplicate document/edge.",
-              "", "## 7. Text/HTML Quality", "",
+              "", "## 7. Chất lượng text và HTML", "",
               "Diagnostic text bỏ head/script/style chỉ để đo; không lưu processed text. HTML parser khoan dung không xác nhận HTML hợp lệ.",
               "| Config | Null | Blank source | Empty visible | Non-NFC | Same text/different IDs groups | HTML flags |",
               "| --- | ---: | ---: | ---: | ---: | ---: | ---: |"]
@@ -62,14 +66,14 @@ def render_markdown(report: dict[str, Any]) -> str:
         if q:
             lines += [f"| {t['config']} | {q['null']} | {q['blank_source']} | {q['empty_visible_text']} | "
                       f"{q['non_nfc']} | {q['same_text_different_id_groups']} | {q['html_structure_flags']} |"]
-    lines += ["", "Date/metadata distributions (aggregate values; no signer or title excerpts):", "", "```json",
+    lines += ["", "Phân bố ngày tháng và metadata (chỉ tổng hợp, không trích nội dung/tên người ký):", "", "```json",
               json.dumps({t["config"]: {"dates": t["date_quality"],
                          "metadata": {k: dict(list(v.items())[:12])
                                       for k, v in t["metadata_distributions"].items()}}
                          for t in report["tables"] if t["metadata_distributions"]},
                          ensure_ascii=False, indent=2), "```",
-              "", "Top 12 displayed per metadata field; complete observed frequencies are in JSON.",
-              "", "## 8. Length Distribution", "",
+              "", "Hiển thị top 12 mỗi trường; JSON giữ toàn bộ tần suất đã đo.",
+              "", "## 8. Phân bố độ dài", "",
               "Characters = diagnostic text length; whitespace words không phải BKAI tokens. Quantile dùng nội suy rank q*(n-1).",
               "", "| Config | Metric | n | min | median | mean | p90 | p95 | p99 | max |",
               "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |"]
@@ -80,27 +84,26 @@ def render_markdown(report: dict[str, Any]) -> str:
                         for k in ("count", "min", "median", "mean", "p90", "p95", "p99", "max")]
                 lines += [f"| {t['config']} | {metric} | " + " | ".join(vals) + " |"]
     lines += ["", "Token count: **unverified**, tokenizer chưa cài/chạy.",
-              "", "## 9. Legal Document Structure", "",
+              "", "## 9. Cấu trúc văn bản pháp luật", "",
               "Regex heuristic: số record có dấu hiệu, không phải số điều/khoản chính xác.", "", "```json",
               json.dumps({t["config"]: t["legal_structure"] for t in report["tables"]
                           if t["content_quality"]}, ensure_ascii=False, indent=2), "```",
-              "", "## 10. Recommended Corpus Selection", "",
+              "", "## 10. Đề xuất chọn corpus tìm kiếm", "",
               "Có thể nghiên cứu retrieval với metadata + content hiện hành; chưa đủ bằng chứng chất lượng để chốt corpus.",
               "Đề xuất W02: index chunk theo Điều/khoản khi cấu trúc đủ rõ, fallback theo đoạn; trả kết quả và đánh giá ở cấp document.",
               "Chunk giữ source ID, revision, config/split/file, vị trí gốc và document ID; chưa chốt token budget.",
               "", "| Phương án | Lợi ích | Hạn chế / ảnh hưởng retrieval | Quyết định |",
               "| --- | --- | --- | --- |",
-              "| Current metadata + content | HTML và metadata filter đã kiểm tra schema | Nội dung rỗng/thiếu cần review; mẫu không xác nhận mọi join | Đề xuất ưu tiên, chưa chọn subset |",
+              "| Metadata + content hiện hành | Có HTML và metadata phục vụ filter | Nội dung rỗng/thiếu và trùng lặp cần review | Phạm vi đã chọn, chưa loại record |",
               "| Stratify theo loại + năm | Tránh bias của prefix; metadata hỗ trợ filter | Ngày thiếu/sai và lệch lớp cần strata riêng | Đề xuất sau kiểm tra coverage |",
-              "| Filter lĩnh vực | Gọn và có mục đích | Giá trị missing/Chưa phân loại không chứng minh ngoài domain | Chờ đo đầy đủ và nhóm chọn domain |",
-              "| Trộn legacy | Tăng coverage lịch sử | ID int, metadata English, plain text; nguy cơ duplicate/leakage | Không trộn tự động |",
+              "| Filter lĩnh vực | Gọn và có mục đích | Giá trị missing/Chưa phân loại không chứng minh ngoài domain | Nhóm chọn domain sau review |",
               "", "Filter dùng loai_van_ban/co_quan_ban_hanh/ngay_ban_hanh/linh_vuc nếu có giá trị; title + so_ky_hieu dùng hiển thị.",
               "Source reference phải giữ portal ID và snapshot; chưa xác minh URL chi tiết cho từng tài liệu.",
-              "", "## 11. Risks and Limitations", ""]
+              "", "## 11. Rủi ro và giới hạn", ""]
     lines += [f"- {warning}" for warning in report["warnings"]]
     lines += ["- Không có relevance labels/split. Rủi ro fine-tuning chính: nhãn yếu, false negatives, duplicate/leakage và truncate văn bản dài.",
               "- HTML flags, mojibake, date tương lai là dấu hiệu review; không tự động chứng minh record sai.",
-              "", "## 12. Next Steps for W02", "",
+              "", "## 12. Công việc tiếp theo cho W02", "",
               "Bảo toàn raw, xử lý NFC trên bản derived, review empty/image-only/HTML tables/encoding/date flags; không loại chỉ dựa độ dài.",
               "Kiểm tra join và duplicate đầy đủ trước labels/splits; tạo nhóm duplicate chống leakage.",
               "Lấy mẫu phân tầng theo năm/loại và review nguồn; kiểm tra tokenizer thật trước quyết định chunk tokens/overlap.",
@@ -109,11 +112,11 @@ def render_markdown(report: dict[str, Any]) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Audit real discovered tables or a supplied inspection file, then save evidence."""
+    """Audit các bảng đã phát hiện hoặc file inspection đầu vào rồi lưu bằng chứng thực tế."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", type=Path, default=Path("configs/corpus.yaml"))
     parser.add_argument("--inspection", type=Path)
-    parser.add_argument("--mode", choices=["sample", "full"], default="sample")
+    parser.add_argument("--mode", choices=["sample", "full"], default="full")
     parser.add_argument("--max-records", type=int, help="Per-file limit; sample default 1000")
     parser.add_argument("--seed", type=int)
     parser.add_argument("--start-group", type=int, default=0, help="Full restart group; separate report")
@@ -128,13 +131,14 @@ def main(argv: list[str] | None = None) -> int:
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
     try:
         config = load_config(args.config)
+        selected = args.configs or config["dataset"].get("configs")
         seed = config.get("seed", 42) if args.seed is None else args.seed
         source = json.loads(args.inspection.read_text(encoding="utf-8")) if args.inspection else (
-            inspect_dataset(config["dataset"]["id"], config["dataset"]["revision"]))
-        if args.configs and set(args.configs) - {t["config"] for t in source["tables"]}:
+            inspect_dataset(config["dataset"]["id"], config["dataset"]["revision"], selected))
+        if selected and set(selected) - {t["config"] for t in source["tables"]}:
             raise ValueError("Requested config was not discovered")
         selected_configs = [t["config"] for t in source["tables"]
-                            if not args.configs or t["config"] in args.configs]
+                            if not selected or t["config"] in selected]
         if len(selected_configs) != len(set(selected_configs)):
             raise ValueError("Multiple files/splits per config are not supported by this audit; "
                              "refusing incomplete joins/totals")
@@ -147,16 +151,16 @@ def main(argv: list[str] | None = None) -> int:
                   "tables": [], "warnings": list(source.get("warnings", [])), "join_integrity": {}}
         if args.mode == "sample":
             report["warnings"].append("Cluster sample is not representative by year/type/domain; no population extrapolation.")
-        report["warnings"].append("Partial joins compare independently sampled records; observed sample-only IDs are not corpus orphans.")
         report["warnings"].append("HTML visible-text/structure diagnostics are heuristics; no cleaning or processed corpus produced.")
         failed = False
         names = {}
         with AuditStore() as store:
             for table in source["tables"]:
-                if args.configs and table["config"] not in args.configs:
+                if selected and table["config"] not in selected:
                     continue
                 name = f"{table['config']}/{table['split']}/{table['file']}"
-                logging.info("Auditing %s (%s)", name, args.mode)
+                logging.info("Đang audit %s (%s), footer có %s dòng", name, args.mode,
+                             table["total_records_if_verified"])
                 try:
                     id_field = table.get("id_field") or ("id" if "id" in table["schema"] else "doc_id")
                     text_field = table.get("text_field") or next(
@@ -180,7 +184,7 @@ def main(argv: list[str] | None = None) -> int:
                     report["tables"].append({**public, **stats, "coverage": coverage,
                                              "audit_status": "measured"})
                     names[table["config"]] = name
-                    logging.info("Audited %s rows in %s", stats["scanned_records"], name)
+                    logging.info("Đã audit %s dòng trong %s", stats["scanned_records"], name)
                 except (OSError, ValueError, KeyError) as exc:
                     failed = True
                     public = {k: v for k, v in table.items() if k != "local_path"}
@@ -194,16 +198,24 @@ def main(argv: list[str] | None = None) -> int:
                                              "error": str(exc)})
                     report["warnings"].append(f"FAILED {name}: {exc}; statistics unavailable")
                     logging.error("Audit failed for %s: %s", name, exc)
-            for left, right in [("metadata", "content"), ("legacy_metadata", "legacy_content"),
-                                ("metadata", "legacy_metadata"), ("metadata", "relationships")]:
+            coverage = {t["config"]: t["coverage"] for t in report["tables"]}
+            for left, right in [("metadata", "content"), ("metadata", "relationships")]:
                 if left in names and right in names:
                     report["join_integrity"][f"{left}->{right}"] = join_integrity(store, names[left], names[right])
+                    if coverage[left] == coverage[right] == "complete":
+                        report["join_integrity"][f"{left}->{right}"]["scope"] = "full_tables"
             if "metadata" in names and "relationships" in names:
                 report["join_integrity"]["metadata->relationship_targets"] = join_integrity(
                     store, names["metadata"], names["relationships"] + ":targets")
+                if coverage["metadata"] == coverage["relationships"] == "complete":
+                    report["join_integrity"]["metadata->relationship_targets"]["scope"] = "full_tables"
         report["scanned_records"] = sum(t["scanned_records"] or 0 for t in report["tables"])
         report["total_records_if_verified"] = {t["config"]: t["total_records_if_verified"] for t in report["tables"]}
         report["status"] = "partial_failure" if failed else "audit_executed"
+        report["audit_completed"] = bool(report["tables"]) and not failed and all(
+            t["coverage"] == "complete" for t in report["tables"])
+        if not report["audit_completed"]:
+            report["warnings"].append("Join chỉ thuộc các dòng đã đọc; ID thiếu ở một phần quét chưa chứng minh orphan toàn corpus.")
         commit = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True)
         git_status = subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True)
         versions = {}
@@ -240,7 +252,7 @@ def main(argv: list[str] | None = None) -> int:
         (args.output / "corpus_audit_manifest.json").write_text(
             json.dumps(manifest, ensure_ascii=False, indent=2, allow_nan=False), encoding="utf-8")
         (args.output / "CORPUS_AUDIT.md").write_text(render_markdown(report), encoding="utf-8")
-        logging.info("Saved aggregate evidence to %s", args.output)
+        logging.info("Đã lưu báo cáo tổng hợp tại %s", args.output)
         return int(failed)
     except (OSError, ValueError, KeyError) as exc:
         logging.error("Audit failed: %s", exc)
@@ -248,4 +260,6 @@ def main(argv: list[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
     raise SystemExit(main())

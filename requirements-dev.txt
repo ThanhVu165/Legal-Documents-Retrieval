@@ -1,2 +1,2 @@
-# Includes runtime dependencies through the dev extra.
+# Extra dev đã bao gồm dependency chạy chương trình.
 -e .[dev]

@@ -5,15 +5,14 @@ BKAI pretrained và BKAI fine-tuned.
 
 ## Phạm vi và trạng thái
 
-W01 đã bổ sung inspection và audit dữ liệu nguồn ở chế độ sample, với báo cáo
-thật và tests offline. Chất lượng `legacy_content` chưa đo được vì file có một
-row group quá lớn; quyền dữ liệu nguồn chưa xác minh. Chưa xây index, huấn luyện
-hoặc tạo dữ liệu processed. Xem [CORPUS_AUDIT](docs/CORPUS_AUDIT.md).
+W01 đã chạy và xác minh audit toàn bộ ba bảng metadata, content, relationships
+hiện hành (1.375.635 dòng, gồm cả quan hệ); không lấy legacy. Quyền dữ liệu nguồn còn chưa xác minh. Chưa xây index,
+huấn luyện hoặc tạo dữ liệu processed. Xem [CORPUS_AUDIT](docs/CORPUS_AUDIT.md).
 
 | Module | Trạng thái |
 | --- | --- |
 | Packaging, config, smoke tests, CI definition | Scaffold; chạy theo hướng dẫn dưới đây |
-| Dataset inspection/audit W01 | Implemented; sample audit partial, see evidence |
+| Dataset inspection/audit W01 | Pipeline full cho ba bảng hiện hành; xem bằng chứng W01 |
 | Data cleaning/segmentation/chunking | Not implemented |
 | BM25, dense retrieval, ranking/search service | Not implemented |
 | BKAI fine-tuning | Not implemented |
@@ -126,64 +125,52 @@ TASK 08: demo → TASK 09: tái lập và nộp bài.
 Chi tiết: [ROADMAP](docs/ROADMAP.md), [ARCHITECTURE](docs/ARCHITECTURE.md),
 [EXPERIMENTS](docs/EXPERIMENTS.md). W01 không tự chuyển sang W02.
 
-## W01 — inspection và audit
+## W01 — audit toàn corpus hiện hành
 
-Chạy từ root repository, với Python của môi trường đã cài package:
+Phạm vi duy nhất: `metadata/data`, `content/data`, `relationships/data` tại revision
+đã khóa trong `configs/corpus.yaml`. Legacy không được đọc hay đưa vào báo cáo.
+CLI mặc định `full`; không giới hạn record và bắt đầu từ row group 0.
+
+Lệnh chạy từ root repository:
 
 ```powershell
 .\.venv\Scripts\python.exe -X utf8 scripts/inspect_dataset.py
-.\.venv\Scripts\python.exe -X utf8 scripts/audit_corpus.py --inspection results/w01/inspection.json --mode sample --max-records 1000 --seed 42
+.\.venv\Scripts\python.exe -X utf8 scripts/audit_corpus.py --inspection results/w01/inspection.json --mode full --configs metadata content relationships --output results/w01_full
 ```
 
-Hai lệnh trên đã chạy thật. Inspection truy cập API/card tại SHA khóa, tự phát
-hiện config/split/file và đọc footer Parquet. Cache chuẩn Hugging Face, nếu có,
-chỉ dùng sau đối chiếu SHA-256 và kích thước với pinned Hub LFS. File còn lại
-đọc HTTP Range, không tải dump. Không cần token hoặc GPU.
+Inspection tự phát hiện config/split/file qua API/card tại SHA khóa và chỉ đọc footer
+của ba config được chọn. Cache Hugging Face chỉ được dùng sau khi SHA-256 và kích
+thước khớp pinned Hub LFS. File còn lại đọc HTTP Range, từ chối server bỏ qua Range.
+Lần full này lưu bản relationships 9 MB đã xác minh checksum trong `data/raw/`
+(bị ignore); metadata/content dùng cache đã xác minh. Không cần token hay GPU.
 
-Sample chọn đều một row group mỗi file bằng seed, rồi chọn đều tối đa 1000 vị trí
-trong group đó, giữ thứ tự đọc. Đây là cluster sample, không đại diện theo loại/năm;
-không phải 1000 record đầu. `decoded_rows` là số hàng batch đã decode, khác với
-`scanned_records` là số record được tính thống kê. Seed cố định chỉ tái lập khi
-revision, file, PyArrow/Python và layout row group không đổi.
+Reader đọc batch 64 dòng; SQLite tạm lưu ID, hash và độ dài để tính thống kê chính
+xác mà không giữ toàn corpus trong RAM. Mỗi row group bị giới hạn 256 MiB compressed
+và uncompressed, đồng thời kiểm tra lại footer thật trước decode. Định dạng nguồn
+hiện tại có một file/split mỗi config; cấu trúc nhiều shards bị từ chối rõ ràng.
 
-Giới hạn 256 MiB compressed và uncompressed mỗi row group áp dụng cả sample/full để tránh PyArrow
-nạp column chunk khổng lồ; sample remote có thêm ngân sách HTTP 256 MiB/file.
-`legacy_content` có một group khoảng 3,5 GB nên quality statistics là null,
-exit code sample toàn bộ = 1 (partial_failure). Schema và footer rows vẫn được giữ.
-Không dùng preview có revision chưa xác minh hoặc nội dung truncated thay dữ liệu gốc.
-API preview legacy đã trả 500/501 trong lần kiểm tra này.
+Output full tại `results/w01_full/`: `corpus_audit.json`, `corpus_audit_manifest.json`
+và `CORPUS_AUDIT.md`; log tiến độ tại `results/logs/w01_full.log`. JSON runtime và raw
+không commit. Báo cáo tổng hợp/manifest nhỏ được kiểm tra trước khi commit.
+Báo cáo không trích HTML, title hoặc tên người ký; ví dụ record chỉ chứa kiểu,
+độ dài, trường thiếu và hash ID. Markdown hiển thị top 12 mỗi metadata field;
+JSON giữ đủ mọi tần suất đã đo.
 
-Output tại `results/w01/`: inspection.json, corpus_audit.json,
-corpus_audit_manifest.json và CORPUS_AUDIT.md. `results/` bị ignore;
-chỉ báo cáo tổng hợp và manifest nhỏ được review để commit.
-Report không chứa raw HTML, title/signer excerpts; sample profiles chỉ chứa kiểu,
-độ dài, null fields và hash ID. JSON đầy đủ metadata frequencies; Markdown hiển thị top 12.
+`coverage=complete` chỉ khi số dòng đã đọc khớp footer, chế độ full và start group 0.
+`audit_completed=true` chỉ khi mọi bảng được chọn đều đạt điều kiện đó, không có lỗi.
+Join có scope `full_tables` khi hai bảng liên quan đã quét đầy đủ; khi đó số thiếu
+counterpart là số đo chính xác trong snapshot, không phải suy ra từ mẫu.
 
-Full có giới hạn đã kiểm tra thật trên 20 rows metadata + 20 rows content:
+Công cụ vẫn hỗ trợ `--mode sample --max-records 1000 --seed 42` cho kiểm thử nhỏ:
+chọn một row group và các vị trí trong group theo seed, không đại diện theo năm/loại.
+Bảng sample cũ đã được thay bằng báo cáo full hiện tại. `--max-records` và
+`--start-group N` làm phạm vi partial; không tự gộp các lượt chạy lại. Full không
+chạy trong CI, CI dùng fixtures giả nhỏ và không cần Internet.
 
-```powershell
-.\.venv\Scripts\python.exe -X utf8 scripts/audit_corpus.py --inspection results/w01/inspection.json --mode full --configs metadata content --max-records 20 --output results/w01_full_bounded
-```
-
-Lệnh full không giới hạn bên dưới **chưa chạy**; đọc toàn bộ current tables theo
-batch 64 và SQLite tạm cho IDs/hashes/quantiles. Không chạy trong CI:
-
-```powershell
-.\.venv\Scripts\python.exe -X utf8 scripts/audit_corpus.py --mode full --configs metadata content relationships --output results/w01_full
-```
-
-`--max-records` giới hạn mỗi file; `--configs` phải là config đã phát hiện.
-Nguồn hiện tại có một file/split mỗi config. Nếu nguồn chuyển sang nhiều file/split
-trong cùng config, CLI từ chối rõ ràng để tránh thiếu IDs/join/totals; chưa hỗ trợ gộp shards.
-`--start-group N` chỉ áp dụng full: bắt đầu lại từ group N, lưu output mới và coi
-đó là partial scan. Không tự merge các lần restart; muốn exact full totals phải
-chạy từ group 0 đến cuối, không giới hạn. Legacy content cần được re-shard từ
-nguồn trước full audit bằng reader này; W01 không sửa file nguồn để làm việc đó.
-
-Join chỉ thuộc records được audit; independently sampled tables có nhiều IDs
-không giao nhau không chứng minh orphan. Whitespace words không phải BKAI tokens.
-HTML visible-text/encoding/structure flags là diagnostics, chưa chứng minh extractor
-đủ tốt. [DATA_CONTRACT](docs/DATA_CONTRACT.md) phân biệt source fields và schema W02 đề xuất.
+Whitespace words không phải BKAI tokens. Text/HTML/encoding/structure flags chỉ là
+kiểm định bằng heuristic, chưa chứng minh corpus sạch hoặc extractor đủ tốt.
+Xem [CORPUS_AUDIT](docs/CORPUS_AUDIT.md), [DATA_CONTRACT](docs/DATA_CONTRACT.md)
+và [W01_VERIFICATION](docs/W01_VERIFICATION.md). Chưa chuyển sang W02.
 
 ## Dữ liệu, checkpoint và secrets
 

@@ -1,4 +1,4 @@
-"""Vietnamese legal retrieval scaffold; retrieval is not implemented."""
+"""Khung tìm kiếm pháp luật tiếng Việt; retrieval chưa được triển khai."""
 
 from importlib.metadata import version
 

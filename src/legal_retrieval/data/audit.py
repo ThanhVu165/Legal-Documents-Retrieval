@@ -1,6 +1,7 @@
-"""Offline, read-only corpus diagnostics; raw text never leaves the accumulator."""
+"""Kiểm định corpus chỉ đọc; nội dung gốc không được xuất khỏi bộ tích lũy."""
 
 import hashlib
+import logging
 import math
 import re
 import sqlite3
@@ -31,12 +32,12 @@ STRUCTURES = {
 
 
 def missing(value: Any) -> bool:
-    """Null and blank strings are missing; zero and categorical sentinels are not."""
+    """Null và chuỗi trắng được xem là thiếu; không suy diễn ý nghĩa của số 0 hay nhãn đặc biệt."""
     return value is None or (isinstance(value, str) and not value.strip())
 
 
 class HTMLDiagnostics(HTMLParser):
-    """Approximate visible text and tag structure solely for diagnostic counts."""
+    """Đo gần đúng text hiển thị và cấu trúc thẻ, chỉ phục vụ thống kê kiểm định."""
 
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
@@ -81,7 +82,7 @@ class HTMLDiagnostics(HTMLParser):
 
 
 class AuditStore:
-    """Temporary SQLite holds IDs, hashes and exact lengths without corpus-sized RAM."""
+    """Lưu ID, hash và độ dài chính xác vào SQLite tạm để không giữ toàn corpus trong RAM."""
 
     def __init__(self) -> None:
         self.directory = tempfile.TemporaryDirectory(prefix="legal-audit-")
@@ -104,7 +105,7 @@ class AuditStore:
         self.directory.cleanup()
 
     def lengths(self, table: str, metric: str) -> dict[str, Any]:
-        """Exact linear-interpolation quantiles, equivalent to q*(n-1) sorted ranks."""
+        """Tính quantile chính xác bằng nội suy tuyến tính tại vị trí q*(n-1) đã sắp xếp."""
         count, low, mean, high = self.db.execute(
             "SELECT count(*),min(value),avg(value),max(value) FROM lengths WHERE t=? AND metric=?",
             (table, metric),
@@ -129,7 +130,7 @@ def audit_records(
     rows: Iterable[dict[str, Any]], fields: list[str], id_field: str | None,
     text_field: str | None, store: AuditStore | None = None, table_name: str = "records",
 ) -> dict[str, Any]:
-    """Measure supplied records only; callers label sample/full coverage separately."""
+    """Chỉ thống kê những dòng đầu vào; nơi gọi ghi rõ phạm vi mẫu hay toàn bộ."""
     if store is None:
         with AuditStore() as owned:
             return audit_records(rows, fields, id_field, text_field, owned, table_name)
@@ -146,6 +147,8 @@ def audit_records(
     relation_counts: Counter[str] = Counter()
     for row in rows:
         count += 1
+        if count % 5000 == 0:
+            logging.info("Đã đọc %s dòng trong %s", count, table_name)
         for field in fields:
             nulls[field] += missing(row.get(field))
         value = row.get(id_field) if id_field else None
@@ -276,7 +279,7 @@ def audit_records(
 
 
 def join_integrity(store: AuditStore, metadata: str, content: str) -> dict[str, Any]:
-    """Join only safe IDs that actually passed through this run's accumulator."""
+    """Join theo ID an toàn đã thực sự đọc trong lần audit này."""
     db = store.db
     shared = db.execute("SELECT count(*) FROM ids a JOIN ids b ON a.k=b.k WHERE a.t=? AND b.t=?",
                         (metadata, content)).fetchone()[0]

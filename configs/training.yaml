@@ -2,7 +2,7 @@ status: proposed_not_run
 checkpoint: bkai-foundation-models/vietnamese-bi-encoder
 revision: null
 seed: 42
-# Starting proposals only; not optimized or verified on T4.
+# Chỉ là cấu hình đề xuất; chưa tối ưu hoặc xác minh trên T4.
 hyperparameters:
   learning_rate: 0.00002
   epochs: 3

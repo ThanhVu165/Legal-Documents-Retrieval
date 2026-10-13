@@ -1,4 +1,4 @@
-"""Offline Parquet and HTTP fixtures; no live Hub dependency in CI."""
+"""File Parquet và phản hồi HTTP giả để CI kiểm thử mà không truy cập Hub."""
 
 import hashlib
 import io
@@ -112,8 +112,9 @@ def test_multiple_config_files_explicitly_rejected(tmp_path):
                                  "license_and_provenance": {},
                                  "tables": [table, {**table, "file": "b.parquet"}]}), encoding="utf-8")
     result = subprocess.run([sys.executable, str(ROOT / "scripts/audit_corpus.py"),
-                             "--inspection", str(source), "--output", str(tmp_path / "out")],
-                            capture_output=True, text=True)
+                             "--inspection", str(source), "--configs", "metadata",
+                             "--output", str(tmp_path / "out")],
+                            capture_output=True, text=True, encoding="utf-8")
     assert result.returncode == 1
     assert "Multiple files/splits" in result.stderr
 
@@ -129,8 +130,9 @@ def test_partial_failure_still_reports_schema(tmp_path):
                                  "license_and_provenance": {}, "tables": [descriptor]}), encoding="utf-8")
     output = tmp_path / "out"
     result = subprocess.run([sys.executable, str(ROOT / "scripts/audit_corpus.py"),
-                             "--inspection", str(source), "--output", str(output)],
-                            capture_output=True, text=True)
+                             "--inspection", str(source), "--configs", "large",
+                             "--output", str(output)],
+                            capture_output=True, text=True, encoding="utf-8")
     assert result.returncode == 1
     report = json.loads((output / "corpus_audit.json").read_text(encoding="utf-8"))
     assert report["tables"][0]["schema"] == descriptor["schema"]
@@ -144,7 +146,7 @@ def test_partial_failure_still_reports_schema(tmp_path):
 @pytest.mark.parametrize("script", ["inspect_dataset.py", "audit_corpus.py"])
 def test_cli_help(script):
     result = subprocess.run([sys.executable, str(ROOT / "scripts" / script), "--help"],
-                            capture_output=True, text=True)
+                            capture_output=True, text=True, encoding="utf-8")
     assert result.returncode == 0, result.stderr
     assert "--output" in result.stdout
 
@@ -161,7 +163,7 @@ def test_offline_cli_report(tmp_path):
     output = tmp_path / "output"
     result = subprocess.run([sys.executable, str(ROOT / "scripts/audit_corpus.py"),
                              "--inspection", str(source), "--output", str(output),
-                             "--max-records", "2"], capture_output=True, text=True)
+                             "--configs", "fixture", "--max-records", "2"], capture_output=True, text=True, encoding="utf-8")
     assert result.returncode == 0, result.stderr
     report = json.loads((output / "corpus_audit.json").read_text(encoding="utf-8"))
     assert report["scanned_records"] == 2

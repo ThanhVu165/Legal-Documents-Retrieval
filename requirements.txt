@@ -1,2 +1,2 @@
-# Single source of dependencies: pyproject.toml
+# Nguồn dependency duy nhất: pyproject.toml
 -e .

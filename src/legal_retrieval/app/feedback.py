@@ -1,1 +1,1 @@
-"""Not implemented. TODO: implement app/feedback in its corresponding roadmap task."""
+"""Chưa triển khai. Thực hiện module app/feedback ở bước tương ứng của lộ trình."""
