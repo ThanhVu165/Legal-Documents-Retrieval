@@ -1,7 +1,7 @@
 # Hệ thống tìm kiếm văn bản pháp luật tiếng Việt theo ngữ nghĩa
 
 Đồ án NLP xây dựng tìm kiếm văn bản pháp luật tiếng Việt, so sánh BM25,
-BKAI pretrained và BKAI fine-tuned. Deadline dự kiến: **15/10/2026**.
+BKAI pretrained và BKAI fine-tuned.
 
 ## Phạm vi và trạng thái
 

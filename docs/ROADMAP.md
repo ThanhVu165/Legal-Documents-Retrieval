@@ -1,7 +1,5 @@
 # Roadmap
 
-Deadline dự kiến 15/10/2026; tiến độ dưới đây không phải cam kết hoàn thành.
-
 | Task | Đầu ra cần kiểm chứng | Trạng thái |
 | --- | --- | --- |
 | TASK 01 — Project Setup and GitHub Initialization | Package, config, tests, CI, commit/push verification | Local scaffold; GitHub acceptance pending |
