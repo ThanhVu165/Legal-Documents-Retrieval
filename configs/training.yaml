@@ -1,0 +1,13 @@
+status: proposed_not_run
+checkpoint: bkai-foundation-models/vietnamese-bi-encoder
+revision: null
+seed: 42
+# Starting proposals only; not optimized or verified on T4.
+hyperparameters:
+  learning_rate: 0.00002
+  epochs: 3
+  batch_size: 16
+validation_metric: ndcg_at_10
+paths:
+  checkpoints: artifacts/checkpoints
+  logs: results/logs

@@ -1,0 +1,2 @@
+# Includes runtime dependencies through the dev extra.
+-e .[dev]

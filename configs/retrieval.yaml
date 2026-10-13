@@ -1,0 +1,12 @@
+baseline: bm25
+dense:
+  model_id: bkai-foundation-models/vietnamese-bi-encoder
+  revision: null # Verify and lock before use.
+top_k: [5, 10, 20] # Proposed evaluation cutoffs.
+document_aggregation:
+  status: proposed_not_implemented
+  policy: max_chunk_score # Validate against document-level relevance labels.
+scores:
+  bm25: lexical_score
+  dense: cosine_similarity
+# Scores are not interchangeable; no score fusion implemented.
