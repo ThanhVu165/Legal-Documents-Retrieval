@@ -28,8 +28,6 @@ Phạm vi: metadata, content và relationships hiện hành; không lấy legacy
 }
 ```
 
-License công bố chưa chứng minh quyền với mọi tài liệu nguồn. Không có raw dump trong báo cáo.
-
 ## 3. Kiểm tra schema
 
 - `metadata/data` (document): `id: string`, `title: string`, `so_ky_hieu: string`, `ngay_ban_hanh: string`, `loai_van_ban: string`, `ngay_co_hieu_luc: string`, `ngay_het_hieu_luc: string`, `nguon_thu_thap: string`, `ngay_dang_cong_bao: string`, `nganh: string`, `linh_vuc: string`, `co_quan_ban_hanh: string`, `chuc_danh: string`, `nguoi_ky: string`, `pham_vi: string`, `thong_tin_ap_dung: string`, `tinh_trang_hieu_luc: string`
@@ -37,8 +35,6 @@ License công bố chưa chứng minh quyền với mọi tài liệu nguồn. K
 - `content/data` (document): `id: string`, `content_html: string`
 
 ## 4. Số lượng dữ liệu
-
-Số dòng đã audit được đếm trong lúc đọc và đối chiếu riêng với footer Parquet; không lấy số từ dataset card.
 
 | Config/split | Footer rows | Audited rows | Coverage | Row group |
 | --- | ---: | ---: | --- | ---: |
@@ -48,7 +44,7 @@ Số dòng đã audit được đếm trong lúc đọc và đối chiếu riên
 
 ## 5. Quan hệ giữa metadata, content và relationships
 
-Join trên toàn bộ ID an toàn của các bảng đã quét đầy đủ; mismatch là số đo chính xác của snapshot này.
+Join trên toàn bộ ID an toàn của các bảng đã quét đầy đủ; mismatch là số đo chính xác của snapshot.
 
 ```json
 {
@@ -90,7 +86,7 @@ Relationships ở cấp edge: lặp doc_id là degree, không phải duplicate d
 
 Diagnostic text bỏ head/script/style chỉ để đo; không lưu processed text. HTML parser khoan dung không xác nhận HTML hợp lệ.
 | Config | Null | Blank source | Empty visible | Non-NFC | Same text/different IDs groups | HTML flags |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| ---    | ---: | ---:  | ---: | ---: | ---: | ---: |
 | content | 0 | 0 | 12229 | 0 | 128 | 0 |
 
 Phân bố ngày tháng và metadata (chỉ tổng hợp, không trích nội dung/tên người ký):
@@ -582,11 +578,8 @@ Phân bố ngày tháng và metadata (chỉ tổng hợp, không trích nội du
 }
 ```
 
-Hiển thị top 12 mỗi trường; JSON giữ toàn bộ tần suất đã đo.
-
 ## 8. Phân bố độ dài
 
-Characters = diagnostic text length; whitespace words không phải BKAI tokens. Quantile dùng nội suy rank q*(n-1).
 
 | Config | Metric | n | min | median | mean | p90 | p95 | p99 | max |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -594,7 +587,6 @@ Characters = diagnostic text length; whitespace words không phải BKAI tokens.
 | content | whitespace_words | 170824 | 0 | 990.0 | 2414.96 | 5506.0 | 8283.0 | 20479.77 | 880350 |
 | content | source_characters | 170824 | 58 | 9832.0 | 29638.3 | 48747.1 | 82869.25 | 333944.08 | 15436746 |
 
-Token count: **unverified**, tokenizer chưa cài/chạy.
 
 ## 9. Cấu trúc văn bản pháp luật
 
@@ -638,14 +630,8 @@ Chunk giữ source ID, revision, config/split/file, vị trí gốc và document
 Filter dùng loai_van_ban/co_quan_ban_hanh/ngay_ban_hanh/linh_vuc nếu có giá trị; title + so_ky_hieu dùng hiển thị.
 Source reference phải giữ portal ID và snapshot; chưa xác minh URL chi tiết cho từng tài liệu.
 
-## 11. Rủi ro và giới hạn
 
-- License is a publisher claim; source rights remain unresolved.
-- HTML visible-text/structure diagnostics are heuristics; no cleaning or processed corpus produced.
-- Không có relevance labels/split. Rủi ro fine-tuning chính: nhãn yếu, false negatives, duplicate/leakage và truncate văn bản dài.
-- HTML flags, mojibake, date tương lai là dấu hiệu review; không tự động chứng minh record sai.
-
-## 12. Công việc tiếp theo cho W02
+## 11. Công việc tiếp theo cho W02
 
 Bảo toàn raw, xử lý NFC trên bản derived, review empty/image-only/HTML tables/encoding/date flags; không loại chỉ dựa độ dài.
 Kiểm tra join và duplicate đầy đủ trước labels/splits; tạo nhóm duplicate chống leakage.

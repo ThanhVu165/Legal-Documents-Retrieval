@@ -1,6 +1,4 @@
 # W01 — Bằng chứng full audit
-
-Audit UTC: 2026-10-13T02:50:33.598820+00:00; Python 3.11.9 trên Windows.
 Phạm vi: chỉ metadata, content, relationships; không lấy legacy.
 
 ## Lệnh đã chạy và kết quả
