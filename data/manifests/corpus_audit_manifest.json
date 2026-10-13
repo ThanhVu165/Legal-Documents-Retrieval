@@ -1,0 +1,203 @@
+{
+  "dataset_id": "th1nhng0/vietnamese-legal-documents",
+  "revision": "8977887f17be2defae4c5171d55562e1cde7d695",
+  "audit_timestamp": "2026-10-13T02:26:26.193146+00:00",
+  "mode": "sample",
+  "sampling_method": "one seeded uniform row group per file; uniform positions inside cluster",
+  "sampling_seed": 42,
+  "scanned_records": 4000,
+  "status": "partial_failure",
+  "git_commit_at_run": "46b3d0612fbfb546e68bb03ffc2d4adc47ba0b07",
+  "git_working_tree_dirty": true,
+  "environment": {
+    "python": "3.11.9",
+    "platform": "Windows-10-10.0.26200-SP0",
+    "packages": {
+      "PyYAML": "6.0.3",
+      "pyarrow": "26.0.0",
+      "pytest": "9.1.1",
+      "ruff": "0.17.0"
+    }
+  },
+  "source_url": "https://huggingface.co/datasets/th1nhng0/vietnamese-legal-documents",
+  "max_records_per_file": 1000,
+  "start_group": 0,
+  "limitations": [
+    "License is a publisher claim; source rights remain unresolved.",
+    "Cluster sample is not representative by year/type/domain; no population extrapolation.",
+    "Partial joins compare independently sampled records; observed sample-only IDs are not corpus orphans.",
+    "HTML visible-text/structure diagnostics are heuristics; no cleaning or processed corpus produced.",
+    "FAILED legacy_content/content/legacy/content.parquet: Selected row group exceeds 256 MiB memory guard; source requires re-sharding; statistics unavailable"
+  ],
+  "files": [
+    {
+      "config": "metadata",
+      "split": "data",
+      "file": "data/metadata.parquet",
+      "size_bytes": 15143095,
+      "verified_sha256": "d7278e8b911a3a37bde871e24f4061f5beed651bb5f4ee177e2504f0633903fa",
+      "hub_claimed_sha256": "d7278e8b911a3a37bde871e24f4061f5beed651bb5f4ee177e2504f0633903fa",
+      "footer_ranges": null,
+      "audit_ranges": null,
+      "http_bytes_read": null,
+      "selected_row_group": 7,
+      "scanned_records": 1000,
+      "coverage": "partial"
+    },
+    {
+      "config": "relationships",
+      "split": "data",
+      "file": "data/relationships.parquet",
+      "size_bytes": 9436116,
+      "verified_sha256": null,
+      "hub_claimed_sha256": "2cdb628b4dfdc92e33d234785f80378d0b99418c7711adcbe6402ade98b57ffb",
+      "footer_ranges": [
+        {
+          "start": 9370580,
+          "end": 9436115,
+          "sha256": "f6dc658b3984b289f88ef8ba1d7cf53d76c7d9b47a4e35b8785bdce6f746c9c9"
+        },
+        {
+          "start": 9352067,
+          "end": 9436107,
+          "sha256": "1f13584544670aaa1de8f9ea12f9f91528484252a4ee9a58f35078e7710b4198"
+        }
+      ],
+      "audit_ranges": [
+        {
+          "start": 9370580,
+          "end": 9436115,
+          "sha256": "f6dc658b3984b289f88ef8ba1d7cf53d76c7d9b47a4e35b8785bdce6f746c9c9"
+        },
+        {
+          "start": 9352067,
+          "end": 9436107,
+          "sha256": "1f13584544670aaa1de8f9ea12f9f91528484252a4ee9a58f35078e7710b4198"
+        },
+        {
+          "start": 7377981,
+          "end": 7423762,
+          "sha256": "ee979cf5871bb23656ffe53dcfad1a41c0d4c60fcd42fd8bd8e4f79d014dd62e"
+        }
+      ],
+      "http_bytes_read": 195359,
+      "selected_row_group": 163,
+      "scanned_records": 1000,
+      "coverage": "partial"
+    },
+    {
+      "config": "content",
+      "split": "data",
+      "file": "data/content.parquet",
+      "size_bytes": 784578084,
+      "verified_sha256": "69c5b99c7e22bd14075ebc60e8d216e9eb35c4f1ab28bfc4c0bc38a87de45aab",
+      "hub_claimed_sha256": "69c5b99c7e22bd14075ebc60e8d216e9eb35c4f1ab28bfc4c0bc38a87de45aab",
+      "footer_ranges": null,
+      "audit_ranges": null,
+      "http_bytes_read": null,
+      "selected_row_group": 7,
+      "scanned_records": 1000,
+      "coverage": "partial"
+    },
+    {
+      "config": "legacy_metadata",
+      "split": "metadata",
+      "file": "legacy/metadata.parquet",
+      "size_bytes": 51272673,
+      "verified_sha256": null,
+      "hub_claimed_sha256": "ca43df8977e66e029b8106163e00f3567376ee5cd4ad19ad0e6e048de48c95f5",
+      "footer_ranges": [
+        {
+          "start": 51207137,
+          "end": 51272672,
+          "sha256": "b9dbd18f3c83f6996d08f66e1ec4dd4f9988b965fc362ad6fbdd96212710852b"
+        }
+      ],
+      "audit_ranges": [
+        {
+          "start": 51207137,
+          "end": 51272672,
+          "sha256": "b9dbd18f3c83f6996d08f66e1ec4dd4f9988b965fc362ad6fbdd96212710852b"
+        },
+        {
+          "start": 4,
+          "end": 6667912,
+          "sha256": "de0dcf51830b334c28b09a6b71b0baa151ca3e02d63c0d5c26bf8ba3441f01a6"
+        },
+        {
+          "start": 6667913,
+          "end": 15056520,
+          "sha256": "54dee11f62027c4c242ab27c47d57f747a5106cd0b5d0a950350ea3875785eba"
+        },
+        {
+          "start": 15056521,
+          "end": 23445128,
+          "sha256": "ff2c480921e3c1149a71922167cd74b4f0384a4e307bdbb7bcb1d7c590613e84"
+        },
+        {
+          "start": 23445129,
+          "end": 31833736,
+          "sha256": "7d604bf9bbeac9ba7aba44bee340cc60189573e228ddf445034ec47979e080de"
+        },
+        {
+          "start": 31833737,
+          "end": 40222344,
+          "sha256": "6e0fd8aa9cb6fec8f0df2cdeca5924dd974b29fdad12b2d94a09b457907fd98d"
+        },
+        {
+          "start": 40222345,
+          "end": 46046743,
+          "sha256": "1717d181f933c40c3783283ee261a27e98a38a69eec2b4e9e1b02b76fd88bc9e"
+        },
+        {
+          "start": 46046744,
+          "end": 51265372,
+          "sha256": "61ac0d006aa769920980351bef894f354225855dc8bd7d8a3be5d42cf0b77013"
+        }
+      ],
+      "http_bytes_read": 51330905,
+      "selected_row_group": 0,
+      "scanned_records": 1000,
+      "coverage": "partial"
+    },
+    {
+      "config": "legacy_content",
+      "split": "content",
+      "file": "legacy/content.parquet",
+      "size_bytes": 3507657146,
+      "verified_sha256": null,
+      "hub_claimed_sha256": "04c6db20f8d8e416e298b09f246b7ce947f85547038a0948835615e4ef8753c0",
+      "footer_ranges": [
+        {
+          "start": 3507591610,
+          "end": 3507657145,
+          "sha256": "cecb0a0959718f517e62b051f20e0419ffd31cbe0d94700a1f621f6cc4b1f293"
+        }
+      ],
+      "audit_ranges": null,
+      "http_bytes_read": null,
+      "selected_row_group": 0,
+      "scanned_records": null,
+      "coverage": "unmeasured"
+    }
+  ],
+  "audit_code_sha256": {
+    "scripts/audit_corpus.py": "91d0848881a510d506f5be84c42b20c799c9adc042e12874e22453167529de08",
+    "scripts/inspect_dataset.py": "0f71fc902f24b19a43d8d12b676070af76a63bc9378ce5d5c63b993520272cce",
+    "src/legal_retrieval/data/audit.py": "5f775ac9acc5bb324f7829ae6613af759b8e9e737ffa64f545b43bb89e70f431",
+    "src/legal_retrieval/data/schema.py": "b6222f6b1c9f53adb41a6cb5496a03672021fa3a5fff77b9f68d28e25858aa80",
+    "src/legal_retrieval/data/inspection.py": "288dc96c3fc76f026d23d2463473c7c52a5f311a79025fc18d9cc9a601201b31"
+  },
+  "report_sha256": "75adbf8d3a762fd6174c91e9608cf4e1ad4b716814c4d22c74c630599c6d3eb7",
+  "config_sha256": "6afab29e8c07ce133c89342438edf4b3093c4b248deb1d434d11667747506381",
+  "cli_arguments": [
+    "--inspection",
+    "results/w01/inspection.json",
+    "--mode",
+    "sample",
+    "--max-records",
+    "1000",
+    "--seed",
+    "42"
+  ]
+}

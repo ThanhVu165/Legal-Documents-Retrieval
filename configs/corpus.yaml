@@ -1,7 +1,9 @@
 dataset:
   id: th1nhng0/vietnamese-legal-documents
-  revision: null # Must audit and lock a revision before downloading.
-  license_status: unverified
+  revision: 8977887f17be2defae4c5171d55562e1cde7d695 # Verified via pinned Hub API.
+  license_status: claimed_source_rights_unresolved
+  claimed_license: cc-by-4.0
+  source_rights: unverified # Card provenance is not legal clearance of source material.
 paths:
   raw: data/raw
   interim: data/interim
@@ -9,9 +11,31 @@ paths:
   annotations: data/annotations
   manifests: data/manifests
 schema:
-  id_field: null # Survey actual dataset fields in TASK 02.
-  text_field: null
-  metadata_fields: [] # Survey title, source, date, type and legal references.
+  id_field: id # Current metadata/content: string; legacy: int64.
+  text_field: content_html # Current content; legacy content is plain text.
+  metadata_fields:
+    - title
+    - so_ky_hieu
+    - ngay_ban_hanh
+    - loai_van_ban
+    - ngay_co_hieu_luc
+    - ngay_het_hieu_luc
+    - nguon_thu_thap
+    - ngay_dang_cong_bao
+    - nganh
+    - linh_vuc
+    - co_quan_ban_hanh
+    - chuc_danh
+    - nguoi_ky
+    - pham_vi
+    - thong_tin_ap_dung
+    - tinh_trang_hieu_luc
+  tables:
+    metadata: {split: data, id_field: id, text_field: null}
+    content: {split: data, id_field: id, text_field: content_html}
+    relationships: {split: data, id_field: doc_id, target_field: other_doc_id}
+    legacy_metadata: {split: metadata, id_field: id, text_field: null}
+    legacy_content: {split: content, id_field: id, text_field: content}
 cleaning:
   status: proposed_not_implemented
   unicode_normalization: NFC

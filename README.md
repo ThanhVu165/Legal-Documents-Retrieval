@@ -5,12 +5,15 @@ BKAI pretrained và BKAI fine-tuned.
 
 ## Phạm vi và trạng thái
 
-TASK 01 chỉ cung cấp cấu trúc project, cấu hình, tài liệu, smoke tests và CI.
-Chưa tải dữ liệu, chưa xây index, chưa huấn luyện và chưa có kết quả đánh giá.
+W01 đã bổ sung inspection và audit dữ liệu nguồn ở chế độ sample, với báo cáo
+thật và tests offline. Chất lượng `legacy_content` chưa đo được vì file có một
+row group quá lớn; quyền dữ liệu nguồn chưa xác minh. Chưa xây index, huấn luyện
+hoặc tạo dữ liệu processed. Xem [CORPUS_AUDIT](docs/CORPUS_AUDIT.md).
 
 | Module | Trạng thái |
 | --- | --- |
 | Packaging, config, smoke tests, CI definition | Scaffold; chạy theo hướng dẫn dưới đây |
+| Dataset inspection/audit W01 | Implemented; sample audit partial, see evidence |
 | Data cleaning/segmentation/chunking | Not implemented |
 | BM25, dense retrieval, ranking/search service | Not implemented |
 | BKAI fine-tuning | Not implemented |
@@ -22,10 +25,11 @@ Chưa tải dữ liệu, chưa xây index, chưa huấn luyện và chưa có k�
 Data → BM25 / BKAI → Ranking ở cấp văn bản → Evaluation → Streamlit.
 Python 3.11; BM25 là lexical baseline; semantic model dự kiến:
 `bkai-foundation-models/vietnamese-bi-encoder`. Corpus dự kiến:
-`th1nhng0/vietnamese-legal-documents`; revision, schema và giấy phép chưa xác minh.
+`th1nhng0/vietnamese-legal-documents`; revision khóa trong configs/corpus.yaml,
+schema xác minh bằng footer Parquet. Card công bố CC BY 4.0; quyền nguồn chưa xác minh.
 GPU dự kiến NVIDIA T4 trên Colab/Kaggle, chưa khẳng định khả năng huấn luyện.
 
-TASK 01 chỉ dùng PyYAML, pytest và ruff. PyTorch, Transformers,
+Package dùng PyYAML và PyArrow cho audit; dev dùng pytest và ruff. PyTorch, Transformers,
 Sentence Transformers, thư viện BM25/FAISS và Streamlit sẽ được bổ sung
 sau khi kiểm tra tương thích; cài đặt hiện tại không tải model.
 
@@ -120,7 +124,66 @@ TASK 02: audit dữ liệu → TASK 03: BM25 → TASK 04: annotation/split →
 TASK 05: BKAI pretrained → TASK 06: fine-tuning → TASK 07: evaluation →
 TASK 08: demo → TASK 09: tái lập và nộp bài.
 Chi tiết: [ROADMAP](docs/ROADMAP.md), [ARCHITECTURE](docs/ARCHITECTURE.md),
-[EXPERIMENTS](docs/EXPERIMENTS.md). Không tự chuyển TASK 02 từ bootstrap.
+[EXPERIMENTS](docs/EXPERIMENTS.md). W01 không tự chuyển sang W02.
+
+## W01 — inspection và audit
+
+Chạy từ root repository, với Python của môi trường đã cài package:
+
+```powershell
+.\.venv\Scripts\python.exe -X utf8 scripts/inspect_dataset.py
+.\.venv\Scripts\python.exe -X utf8 scripts/audit_corpus.py --inspection results/w01/inspection.json --mode sample --max-records 1000 --seed 42
+```
+
+Hai lệnh trên đã chạy thật. Inspection truy cập API/card tại SHA khóa, tự phát
+hiện config/split/file và đọc footer Parquet. Cache chuẩn Hugging Face, nếu có,
+chỉ dùng sau đối chiếu SHA-256 và kích thước với pinned Hub LFS. File còn lại
+đọc HTTP Range, không tải dump. Không cần token hoặc GPU.
+
+Sample chọn đều một row group mỗi file bằng seed, rồi chọn đều tối đa 1000 vị trí
+trong group đó, giữ thứ tự đọc. Đây là cluster sample, không đại diện theo loại/năm;
+không phải 1000 record đầu. `decoded_rows` là số hàng batch đã decode, khác với
+`scanned_records` là số record được tính thống kê. Seed cố định chỉ tái lập khi
+revision, file, PyArrow/Python và layout row group không đổi.
+
+Giới hạn 256 MiB compressed và uncompressed mỗi row group áp dụng cả sample/full để tránh PyArrow
+nạp column chunk khổng lồ; sample remote có thêm ngân sách HTTP 256 MiB/file.
+`legacy_content` có một group khoảng 3,5 GB nên quality statistics là null,
+exit code sample toàn bộ = 1 (partial_failure). Schema và footer rows vẫn được giữ.
+Không dùng preview có revision chưa xác minh hoặc nội dung truncated thay dữ liệu gốc.
+API preview legacy đã trả 500/501 trong lần kiểm tra này.
+
+Output tại `results/w01/`: inspection.json, corpus_audit.json,
+corpus_audit_manifest.json và CORPUS_AUDIT.md. `results/` bị ignore;
+chỉ báo cáo tổng hợp và manifest nhỏ được review để commit.
+Report không chứa raw HTML, title/signer excerpts; sample profiles chỉ chứa kiểu,
+độ dài, null fields và hash ID. JSON đầy đủ metadata frequencies; Markdown hiển thị top 12.
+
+Full có giới hạn đã kiểm tra thật trên 20 rows metadata + 20 rows content:
+
+```powershell
+.\.venv\Scripts\python.exe -X utf8 scripts/audit_corpus.py --inspection results/w01/inspection.json --mode full --configs metadata content --max-records 20 --output results/w01_full_bounded
+```
+
+Lệnh full không giới hạn bên dưới **chưa chạy**; đọc toàn bộ current tables theo
+batch 64 và SQLite tạm cho IDs/hashes/quantiles. Không chạy trong CI:
+
+```powershell
+.\.venv\Scripts\python.exe -X utf8 scripts/audit_corpus.py --mode full --configs metadata content relationships --output results/w01_full
+```
+
+`--max-records` giới hạn mỗi file; `--configs` phải là config đã phát hiện.
+Nguồn hiện tại có một file/split mỗi config. Nếu nguồn chuyển sang nhiều file/split
+trong cùng config, CLI từ chối rõ ràng để tránh thiếu IDs/join/totals; chưa hỗ trợ gộp shards.
+`--start-group N` chỉ áp dụng full: bắt đầu lại từ group N, lưu output mới và coi
+đó là partial scan. Không tự merge các lần restart; muốn exact full totals phải
+chạy từ group 0 đến cuối, không giới hạn. Legacy content cần được re-shard từ
+nguồn trước full audit bằng reader này; W01 không sửa file nguồn để làm việc đó.
+
+Join chỉ thuộc records được audit; independently sampled tables có nhiều IDs
+không giao nhau không chứng minh orphan. Whitespace words không phải BKAI tokens.
+HTML visible-text/encoding/structure flags là diagnostics, chưa chứng minh extractor
+đủ tốt. [DATA_CONTRACT](docs/DATA_CONTRACT.md) phân biệt source fields và schema W02 đề xuất.
 
 ## Dữ liệu, checkpoint và secrets
 

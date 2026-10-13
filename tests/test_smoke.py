@@ -1,6 +1,7 @@
 import importlib
 import importlib.metadata
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -26,8 +27,12 @@ def test_configs(name, keys):
     assert keys <= config.keys()
     if name == "corpus":
         assert config["dataset"]["id"] == "th1nhng0/vietnamese-legal-documents"
-        assert config["dataset"]["revision"] is None
-        assert config["schema"]["id_field"] is None
+        assert re.fullmatch(r"[0-9a-f]{40}", config["dataset"]["revision"])
+        assert config["schema"]["id_field"] == "id"
+        assert config["schema"]["text_field"] == "content_html"
+        assert config["cleaning"]["status"] == "proposed_not_implemented"
+        assert config["chunking"]["status"] == "proposed_not_implemented"
+        assert config["chunking"]["max_tokens"] is None
     elif name == "retrieval":
         assert config["baseline"] == "bm25"
         assert all(isinstance(k, int) and k > 0 for k in config["top_k"])

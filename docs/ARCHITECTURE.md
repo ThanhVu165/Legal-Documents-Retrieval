@@ -1,7 +1,10 @@
 # Kiến trúc dự kiến
 
 Luồng: Data → BM25/BKAI → Ranking → Evaluation → Streamlit.
-Tất cả module nghiệp vụ dưới đây **Not implemented**.
+Các module retrieval/preprocessing dưới đây **Not implemented**.
+W01 đã triển khai data/schema.py (config và ID), data/inspection.py (nguồn và footer),
+data/audit.py (diagnostics offline và SQLite tạm), cùng hai CLI inspection/audit.
+Không tạo processed text; diagnostics text chỉ tồn tại trong bộ nhớ từng record.
 
 | Vị trí | Trách nhiệm dự kiến |
 | --- | --- |
@@ -18,8 +21,8 @@ Tất cả module nghiệp vụ dưới đây **Not implemented**.
 | app/feedback.py | Thu feedback có nguồn và version |
 | utils/ | Chỉ thêm tiện ích khi có nhu cầu thực tế |
 
-`configs/` là đề xuất, chưa có loader nghiệp vụ. Không tạo API hoặc logic giả.
+Corpus config có loader kiểm tra dataset ID/revision. Retrieval/training vẫn là đề xuất.
 Raw → interim → processed phải giữ liên kết nguồn, ID/hash/revision;
-schema và quyết định chunking chờ TASK 02. BM25 score và cosine similarity
+Schema nguồn xem DATA_CONTRACT; quyết định extraction/chunking chờ W02. BM25 score và cosine similarity
 khác thang đo; chưa triển khai fusion. Đánh giá ở cấp document sau aggregation.
 Artifacts lưu local, manifests có thể commit sau review.
